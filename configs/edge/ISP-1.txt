@@ -1,0 +1,164 @@
+!
+===================================================================================================================================================================================
+! IPS1 - Principais Funções
+!
+! Funcoes principais:
+! - Roteador de borda da rede
+! - Integracao da rede interna através do OSPF
+! - Rota default para o roteador INTERNET
+! - Anuncio da rota default através do OSPF
+! - NAT/PAT para acesso das redes internas à Internet
+!
+===================================================================================================================================================================================
+!
+! Configurações Iniciais
+!
+
+en
+conf t
+
+hostname IPS1
+banner motd #! Somente Pessas Autorizadas !#
+
+enable secret class
+
+line console 0
+ privilege level 15
+ password class
+ login
+exit
+
+line vty 0 4
+ password class
+ login
+exit
+
+service password-encryption
+
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Desativa a tentativa de resolucao DNS quando um comando incorreto e digitado.
+!
+
+en
+conf t
+
+no ip domain-lookup
+
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Configurando os enlaces interno e externo.
+!
+! Ethernet0/1 -> Rede interna / NAT Inside
+! Ethernet0/2 -> INTERNET / NAT Outside
+!
+
+en
+conf t
+
+interface Ethernet0/1
+ ip address 10.66.0.1 255.255.255.252
+ ip nat inside
+ no shutdown
+exit
+
+interface Ethernet0/2
+ ip address 200.10.0.1 255.255.255.252
+ ip nat outside
+ no shutdown
+exit
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh ip int brief | ex una
+
+!
+===================================================================================================================================================================================
+!
+! Configurando OSPF.
+! A rota default será anunciada como External Type 1.
+!
+
+en
+conf t
+
+router ospf 10
+ router-id 4.4.4.4
+ network 10.66.0.1 0.0.0.0 area 0
+ default-information originate metric-type 1
+exit
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh ip route ospf
+sh ip ospf interface brief
+sh ip ospf neighbor
+sh ip ospf
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a rota default para o roteador INTERNET.
+!
+
+en
+conf t
+
+ip route 0.0.0.0 0.0.0.0 200.10.0.2
+
+end
+wr
+
+!
+! Verificando
+!
+
+sh ip route 0.0.0.0
+
+!
+===================================================================================================================================================================================
+!
+! Configurando NAT/PAT.
+!
+! A ACL 10 identifica as redes 192.168.0.0/16 que poderão ser traduzidas.
+! Todos os endereços internos utilizam o endereço da Ethernet0/2 através de overload.
+!
+
+en
+conf t
+
+access-list 10 permit 192.168.0.0 0.0.255.255
+
+ip nat inside source list 10 interface Ethernet0/2 overload
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+show ip nat statistics
+show ip nat translations
+
+!
+===================================================================================================================================================================================
+!

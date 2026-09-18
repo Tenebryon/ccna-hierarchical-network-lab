@@ -1,0 +1,107 @@
+!
+===================================================================================================================================================================================
+! INTERNET - Principais Funções
+!
+! Funcoes principais:
+! - Simulacao da rede externa / Internet
+! - Enlace com IPS1 através da rede 200.10.0.0/30
+! - Enlace com IPS2 através da rede 200.0.0.0/30
+! - Loopback 8.8.8.8 utilizada como destino externo para testes
+!
+===================================================================================================================================================================================
+!
+! Configurações Iniciais
+!
+
+en
+conf t
+
+hostname INTERNET
+banner motd #! Somente Pessas Autorizadas !#
+
+enable secret class
+
+line console 0
+ privilege level 15
+ password class
+ login
+exit
+
+line vty 0 4
+ password class
+ login
+exit
+
+service password-encryption
+
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Desativa a tentativa de resolucao DNS quando um comando incorreto e digitado.
+!
+
+en
+conf t
+
+no ip domain-lookup
+
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Configurando os enlaces com os roteadores de borda.
+!
+
+en
+conf t
+
+interface Ethernet0/0
+ ip address 200.0.0.2 255.255.255.252
+ no shutdown
+exit
+
+interface Ethernet0/2
+ ip address 200.10.0.2 255.255.255.252
+ no shutdown
+exit
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh ip int brief | ex una
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a Loopback utilizada para simular um destino na Internet.
+!
+
+en
+conf t
+
+interface Loopback0
+ ip address 8.8.8.8 255.255.255.255
+exit
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh ip int brief | ex una
+sh run int Loopback0
+
+!
+===================================================================================================================================================================================
+!
