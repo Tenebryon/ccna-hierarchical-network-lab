@@ -66,7 +66,6 @@ entre configurações, documentação e evidências do laboratório.
 ccna-hierarchical-network-lab/
 │
 ├── README.md
-├── LICENSE
 │
 ├── topology/
 │   ├── topology-final.png
