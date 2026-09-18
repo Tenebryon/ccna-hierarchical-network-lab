@@ -63,7 +63,7 @@ A organização do repositório foi separada por função para facilitar a naveg
 entre configurações, documentação e evidências do laboratório.
 
 ```text
-lab-cisco-collapsed-core/
+ccna-hierarchical-network-lab/
 │
 ├── README.md
 ├── LICENSE
@@ -81,6 +81,20 @@ lab-cisco-collapsed-core/
 │   └── edge/
 │
 ├── windows-server/
+│   ├── server-manager-overview.png
+│   ├── server-manager-overview-2.png
+│   │
+│   ├── network/
+│   │   └── ipv4-config.png
+│   │
+│   ├── ad-ds/
+│   │   └── domain-servidordc-local.png
+│   │
+│   ├── dhcp/
+│   │   └── dhcp-scopes.png
+│   │
+│   └── dns/
+│       └── dns-zone.png
 │
 ├── docs/
 │   ├── addressing.md
