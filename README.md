@@ -63,7 +63,7 @@ A organização do repositório foi separada por função para facilitar a naveg
 entre configurações, documentação e evidências do laboratório.
 
 ```text
-projeto-rede-ccna/
+lab-cisco-collapsed-core/
 │
 ├── README.md
 ├── LICENSE
