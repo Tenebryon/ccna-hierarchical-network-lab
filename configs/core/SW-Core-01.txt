@@ -1,0 +1,351 @@
+!
+===================================================================================================================================================================================
+! SW-CORE-01 - Principais Funções
+!
+! Funcoes principais:
+! - Roteamento entre a camada de Distribuicao e a borda
+! - Participacao no OSPF Area 0
+! - Redundancia de gateway da VLAN 50 utilizando HSRP
+! - Root Bridge STP
+! - EtherChannel entre os switches da camada Core
+! - VLAN 130 destinada ao gerenciamento dos equipamentos Core/DC
+! - VLAN 333 utilizada como Native VLAN
+!
+===================================================================================================================================================================================
+!
+! Configurações Iniciais
+!
+en
+conf t
+hostname SW-CORE-01
+banner motd #! Somente Pessoas Autorizadas ! #
+
+enable secret class
+
+line console 0
+ privilege level 15
+ password class
+ login
+exit
+
+line vty 0 4
+ password class
+ login
+exit
+
+service password-encryption
+
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Desativa a tentativa de resolucao DNS quando um comando incorreto e digitado.
+!
+
+no ip domain-lookup
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Habilitando o roteamento IPv4.
+!
+
+ip routing
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Criando as Vlans que serão usadas nesse lab
+!
+
+! VLAN destinada ao Data Center.
+vlan 50
+ name DC
+exit
+
+! VLAN de gerenciamento dos equipamentos Core e Data Center.
+vlan 130
+ name GER-DC-CORE
+exit
+
+! VLAN utilizada como Native VLAN.
+vlan 333
+ name Native
+exit
+
+!
+! Verificando as configurações aplicadas
+!
+sh vlan
+sh vlan brief
+sh int trunk
+
+!
+===================================================================================================================================================================================
+!
+! Configurando SW-CORE-01 como Root STP.
+!
+
+en
+conf t
+spanning-tree vlan 1-4094 priority 0
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+show spanning-tree
+show spanning-tree summary
+
+!
+===================================================================================================================================================================================
+!
+! Configurando interfaces que fazem ligação do SW-CORE-01 aos Dist 1 e 2 | Portas Roteadas
+! Interface e0/1 interliga o SW-CORE-01 ao SW-DIST-01
+! Interface e0/2 interliga o SW-CORE-01 ao SW-DIST-02
+!
+
+en
+conf t
+
+interface Ethernet0/1
+ no switchport
+ ip address 10.12.0.2 255.255.255.252
+ no shutdown
+exit
+
+interface Ethernet0/2
+ no switchport
+ ip address 10.21.0.2 255.255.255.252
+ no shutdown
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+sh ip int brief | exclude una
+
+!
+===================================================================================================================================================================================
+!
+! Configurando interface Port-Channel entre os switches Core
+! Configuração LACP
+! Interfaces Ethernet0/0 e Ethernet2/2 configuradas como Po1
+!
+
+en
+conf t
+
+interface range Ethernet0/0 , Ethernet2/2
+ no shutdown
+ channel-group 1 mode active
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Port-Channel 1 configurado como trunk entre os switches Core.
+! Permitindo o trafego das VLANs 50 e 130, VLAN 333 configurada como Nativa.
+!
+
+en
+conf t
+
+interface Port-channel1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+ switchport trunk allowed vlan 50,130,333
+ switchport trunk native vlan 333
+ no shutdown
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+sh etherchannel summary
+sh int Po1
+sh int trunk
+sh run int Po1
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a interface Ethernet3/0 como trunk para ligação com a rede do Data Center
+!
+
+en
+conf t
+
+interface Ethernet3/0
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+sh run int e3/0
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a Vlan de Gerenciamento
+!
+
+en
+conf t
+
+interface Vlan130
+ description # ! Interface de Gerencia - 172.16.130.0/24 !
+ ip address 172.16.130.10 255.255.255.0
+ no shutdown
+exit
+
+ip default-gateway 172.16.130.1
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+sh run int vlan130
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a SVI da Vlan50 que atende a rede do Data Center.
+!
+! Padrao de enderecamento:
+!
+! SW-CORE-01 - Atua como equipamento prioritario no HSRP.
+! O servidor DHCP e DNS centralizado na VLAN 50 - 192.168.50.10
+!
+! SW-CORE-01 - 192.168.50.2
+! SW-CORE-02 - 192.168.50.3
+! Gateway Virtual HSRP - 192.168.50.1
+!
+
+en
+conf t
+
+interface Vlan50
+ description # ! Interface Default-Gateway da vlan 50 - 192.168.50.0/24 !
+ ip address 192.168.50.2 255.255.255.0
+ standby 50 ip 192.168.50.1
+ standby 50 priority 150
+ standby 50 preempt
+ no shutdown
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+show standby brief
+show standby
+
+!
+===================================================================================================================================================================================
+!
+! Configurando interface ponto a ponto entre o SW-CORE-01 e o ISP1.
+!
+
+en
+conf t
+
+interface Ethernet2/1
+ no switchport
+ description # ! Interface ponto a ponto SW-Core-1 com ISP1 !
+ ip address 10.66.0.2 255.255.255.252
+ no shutdown
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+sh ip int brief | exclude una
+
+!
+===================================================================================================================================================================================
+!
+! OSPF configurado nos links ponto a ponto.
+! interface e0/1 -> SW-DIST-01
+! interface e0/2 -> SW-DIST-02
+! interface e2/1 -> ISP1
+!
+! Interfaces membros do Port-Channel, operando em camada 2
+! e não formando adjacência OSPF.
+! interface e0/0 -> SW-CORE-02
+! interface e2/2 -> SW-CORE-02
+!
+! As demais interfaces permanecem passivas.
+!
+
+en
+conf t
+
+router ospf 10
+ router-id 3.3.3.3
+ passive-interface default
+ no passive-interface Ethernet0/0
+ no passive-interface Ethernet0/1
+ no passive-interface Ethernet0/2
+ no passive-interface Ethernet2/1
+ no passive-interface Ethernet2/2
+ network 172.16.0.0 0.0.255.255 area 0
+ network 192.168.0.0 0.0.255.255 area 0
+ network 10.0.0.0 0.255.255.255 area 0
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+sh ip route ospf
+sh ip ospf interface brief
+
+!
+===================================================================================================================================================================================
+!
+! Adicionando description as portas atualmente nao utilizadas e as desligando.
+!
+
+en
+conf t
+
+interface Ethernet0/3
+ shutdown
+exit
+
+interface range Ethernet1/0 - 3
+ shutdown
+exit
+
+interface range Ethernet2/0, Ethernet2/3
+ shutdown
+exit
+
+interface range Ethernet3/1 - 3
+ shutdown
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
