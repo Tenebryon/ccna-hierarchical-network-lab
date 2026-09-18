@@ -1,0 +1,383 @@
+!
+====================================================================================================================================================================================
+! 
+! SW-DIST-02 - Principais Funções
+!
+! Roteamento inter-VLAN
+! Gateway redundante utilizando HSRP
+! Participacao no OSPF Area 0
+! Backup Root Bridge STP
+! Distribuicao das VLANs para a camada de acesso
+! VLAN 120 destinada ao gerenciamento dos switches de Access/Distribution
+! VLAN 333 utilizada como Native VLAN dedicada nos enlaces trunk
+!
+====================================================================================================================================================================================
+!
+! Configurações Iniciais
+!
+en
+conf t
+hostname SW-DIST-02
+banner motd #! Somente Pessas Autorizadas !#
+!
+enable secret class 
+!
+line console 0
+privilege level 15
+password class
+login
+exit
+!
+line vty 0 4
+password class
+login
+exit
+!
+service password-encryption
+!
+====================================================================================================================================================================================
+!
+! Desativa a tentativa de resolucao DNS quando um comando incorreto e digitado.
+!
+no ip domain-lookup
+!
+====================================================================================================================================================================================
+! Habilita o roteamento de camada 3 no switch de distribuicao.
+!
+ip routing
+end 
+wr
+!
+====================================================================================================================================================================================
+!
+! Criando as Vlans que serão usadas nesse lab
+!
+en
+conf t 
+vlan 10
+ name LAB-GRIF
+exit
+vlan 20
+ name LAB-SONS
+exit
+vlan 30
+ name LAB-CORV
+exit
+vlan 40
+ name LAB-LUFA
+exit
+vlan 60
+ name SAL-PRO
+exit
+vlan 70
+ name SAL-ADM
+exit
+vlan 80
+ name DOR-GRIF
+exit
+vlan 90
+ name DOR-SONS
+exit
+vlan 100
+ name DOR-CORV
+exit
+vlan 110
+ name DOR-LUFA
+exit
+
+!
+! Criando Vlan de Gerenciamento dos Switches
+!
+
+vlan 120
+ name GER-AC-DST
+exit
+
+!
+! Criando Vlan Nativa sem SVI ou Endereço IP
+!
+
+vlan 333
+ name NATIVE
+end
+wr
+!
+!
+===================================================================================================================================================================================
+!
+!
+! Configurando o SW-DIST-2 como Backup Root STP.
+!
+en
+conf t
+spanning-tree vlan 1-4094 priority 4096
+end
+wr
+!
+===================================================================================================================================================================================
+!
+! Configurando trunk entre o SW-DIST-1 e SW-DIST-2
+!
+en 
+conf t 
+int e0/0
+ description Trunk Entre SW-DIST-1 e SW-DIST-2
+ switchport
+ switchport trunk encapsulation dot1q
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 10,20,30,40,50,60,70,80,90,100,110,120
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+end
+wr
+!
+!
+!
+===================================================================================================================================================================================
+!
+! Configurando interfaces que fazem ligação do SW-DIST-1 aos Cores 1 e 2 ! Portas Roteadas
+! Interface e0/1 interliga o SW-DIST-1 ao SW-CORE-2
+! Interface e0/2 interliga o SW-DIST-1 ao SW-CORE-1
+!
+
+interface Ethernet0/1
+ description Interface L3 - SW-CORE-2
+ no switchport
+ ip address 10.22.0.1 255.255.255.252
+ no shutdown
+
+interface Ethernet0/2
+ description Interface L3 - SW-CORE-1
+ no switchport
+ ip address 10.21.0.1 255.255.255.252
+ no shutdown
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a interfaces de acessos
+! Cada equipamento ira portar sua vlan de acesso específica + vlan de gerencia + vlan nativa
+!
+===================================================================================================================================================================================
+!
+
+
+interface Ethernet0/3
+ description Interface Trunk - Vlan20-LAB-Sons - Equipamento SW-LAB-06
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 20,120,333
+
+interface Ethernet1/1
+ description Interface Trunk - Vlan10-LAB-Grif - Equipamento SW-LAB-01
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 10,120,333
+
+interface Ethernet1/2
+ description Interface Trunk - Vlan100-Dor-Corv - Equipamento SW-DOR-CORV
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 100,120,333
+
+interface Ethernet1/3
+ description Interface Trunk - Vlan110-Dor-Lufa - Equipamento SW-DOR-LUFA
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 110,120,333
+
+interface Ethernet2/0
+ description Interface Trunk - Vlan60-Sal-Pro - Equipamento SW-SP-01
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 60,120,333
+
+interface Ethernet2/1
+ description Interface Trunk - Vlan70-Sal-Adm - Equipamento SW-ADM-01
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 70,120,333
+
+interface Ethernet2/2
+ description Interface Trunk - Vlan80-Dor-Grif - Equipamento SW-DOR-GRIF
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 80,120,333
+
+interface Ethernet2/3
+ description Interface Trunk - Vlan90-Dor-Sons - Equipamento SW-DOR-SONS
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 90,120,333
+
+!
+===================================================================================================================================================================================
+!
+! Adicionando description as portas atualmente nao utilizadas e as desligando.
+!
+
+interface Ethernet1/0
+ description NAO-UTILIZADA
+ shutdown
+ exit
+ 
+interface Ethernet3/0
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet3/1
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet3/2
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet3/3
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet4/0
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet4/1
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet4/2
+ description NAO-UTILIZADA
+ shutdown
+ exit
+
+interface Ethernet4/3
+ description NAO-UTILIZADA
+ shutdown
+ end
+ wr
+!
+!
+===================================================================================================================================================================================
+!
+! Configurando as SVIs, Roteamento inter-Vlan, DHCP Relay e o HSRP
+!
+!
+! Padrao de enderecamento:
+!
+! O SW-DIST-02 atua como equipamento de backup no HSRP.
+! SW-DIST-01 - 192.168.x.2 ---- prioridade HSRP 150 e preempt
+! SW-DIST-02 - 192.168.x.3 ---- backup no HSRP.
+! O servidor DHCP centralizado esta na VLAN 50 - 192.168.50.10
+!
+!
+
+interface Vlan10
+ description VLAN10-LAB-GRIF
+ ip address 192.168.10.3 255.255.255.0
+ standby 10 ip 192.168.10.1
+ exit
+
+interface Vlan20
+ description VLAN20-LAB-SONS
+ ip address 192.168.20.3 255.255.255.0
+ standby 20 ip 192.168.20.1
+ exit
+
+interface Vlan30
+ description VLAN30-LAB-CORV
+ ip address 192.168.30.3 255.255.255.0
+ standby 30 ip 192.168.30.1
+ exit
+
+interface Vlan40
+ description VLAN40-LAB-LUFA
+ ip address 192.168.40.3 255.255.255.0
+ standby 40 ip 192.168.40.1
+ exit
+
+interface Vlan60
+ description VLAN60-SAL-PRO
+ ip address 192.168.60.3 255.255.255.0
+ standby 60 ip 192.168.60.1
+ exit
+
+interface Vlan70
+ description VLAN70-SAL-ADM
+ ip address 192.168.70.3 255.255.255.0
+ standby 70 ip 192.168.70.1
+ exit
+
+interface Vlan80
+ description VLAN80-DOR-GRIF
+ ip address 192.168.80.3 255.255.255.0
+ standby 80 ip 192.168.80.1
+ exit
+
+interface Vlan90
+ description VLAN90-DOR-SONS
+ ip address 192.168.90.3 255.255.255.0
+ standby 90 ip 192.168.90.1
+ exit
+
+interface Vlan100
+ description VLAN100-DOR-CORV
+ ip address 192.168.100.3 255.255.255.0
+ standby 100 ip 192.168.100.1
+ exit
+
+interface Vlan110
+ description VLAN110-DOR-LUFA
+ ip address 192.168.110.3 255.255.255.0
+ standby 110 ip 192.168.110.1
+ end
+ wr
+
+!
+===================================================================================================================================================================================
+!
+! Interface Vlan de Gerenciamento
+!
+
+interface Vlan120
+ description # ! Interface de Gerencia - 172.16.120.0/24 !
+ ip address 172.16.120.28 255.255.255.0
+ no shutdown
+ end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! OSPF configurado nos links ponto a ponto.
+! interface e0/1 -> SW-CORE-02
+! interface e0/2 -> SW-CORE-01
+! As demais interfaces permanecem passivas
+!
+
+router ospf 10
+ router-id 1.1.2.2
+ passive-interface default
+ no passive-interface Ethernet0/1
+ no passive-interface Ethernet0/2
+ network 172.16.0.0 0.0.255.255 area 0
+ network 192.168.0.0 0.0.255.255 area 0
+ network 10.0.0.0 0.255.255.255 area 0
+
+!
+===================================================================================================================================================================================
+!
