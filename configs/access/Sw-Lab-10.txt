@@ -1,0 +1,138 @@
+!
+===================================================================================================================================================================================
+! SW-LAB-10 - Principais Funções
+!
+! - Funcoes principais:
+! - Switch de acesso do grupo LAB-LUFA
+! - Transporte da VLAN 40
+! - VLAN 120 destinada ao gerenciamento
+! - VLAN 333 utilizada como Native VLAN
+!
+===================================================================================================================================================================================
+!
+! Configurações Iniciais
+!
+
+en
+conf t
+hostname SW-LAB-10
+banner motd #! Somente Pessoas Autorizadas ! #
+
+enable secret class
+
+line console 0
+ privilege level 15
+ password class
+ login
+exit
+
+line vty 0 4
+ password class
+ login
+exit
+
+service password-encryption
+
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Desativa a tentativa de resolucao DNS quando um comando incorreto e digitado.
+!
+
+en
+conf t
+no ip domain-lookup
+end
+wr
+
+!
+===================================================================================================================================================================================
+!
+! Criando as VLANs utilizadas nesse equipamento.
+!
+
+en
+conf t
+
+vlan 40
+ name LAB-LUFA
+exit
+
+vlan 120
+ name GER-AC-DST
+exit
+
+vlan 333
+ name Native
+exit
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh vlan
+sh vlan brief
+
+!
+===================================================================================================================================================================================
+!
+! Configurando Ethernet0/1 e Ethernet0/2 como interfaces trunk.
+! VLAN 333 utilizada como Native VLAN.
+! Permitindo o trafego das VLANs 40, 120
+!
+
+en
+conf t
+
+interface range Ethernet0/1 , Ethernet0/2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 333
+ switchport trunk allowed vlan 40,120
+ 
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh int switchport
+sh int trunk
+
+!
+===================================================================================================================================================================================
+!
+! Configurando a interface VLAN de gerenciamento.
+!
+
+en
+conf t
+
+interface Vlan120
+ description # ! Interface de Gerencia - 172.16.120.0/24 !
+ ip address 172.16.120.19 255.255.255.0
+ no shutdown
+exit
+
+ip default-gateway 172.16.120.1
+
+end
+wr
+
+!
+! Verificando as configurações aplicadas
+!
+
+sh ip int brief | ex una
+sh run int vlan120
+
+!
+===================================================================================================================================================================================
+!
