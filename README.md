@@ -101,14 +101,16 @@ ccna-hierarchical-network-lab/
 │   └── validation.md
 │
 └── evidence/
-    ├── ospf-neighbors.png
-    ├── ospf-routes.png
-    ├── hsrp-status.png
-    ├── stp-root.png
-    ├── etherchannel-summary.png
-    ├── dhcp-client.png
-    ├── dns-resolution.png
-    └── nat-translations.png
+    ├── dhcp-and-dns-validation.png
+    ├── internet-routing-status.png
+    ├── isp1-nat-connectivity.png
+    ├── isp2-ospf-status.png
+    ├── isp2-routing.png
+    ├── sw-core-01-ospf-etherchannel.png
+    ├── sw-core-02-stp-root.png
+    ├── sw-dist-01-hsrp-status.png
+    ├── sw-dist-02-stp-root.png
+    └── windows-server-dns-validation.png
 	
 ```
 	
